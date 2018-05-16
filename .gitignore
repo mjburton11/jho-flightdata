@@ -102,3 +102,8 @@ venv.bak/
 
 # mypy
 .mypy_cache/
+
+*.pdf
+*warmup*
+*.DS_Store
+*.zip
