@@ -1,6 +1,8 @@
 " process flight data from raspberri pi"
 import pandas as pd
 import numpy as np
+from numpy import array as ay
+from numpy import float32 as flt
 import simplekml
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -33,27 +35,33 @@ def parse_pidata(pifile):
 
     data = np.array(data)
 
-    ms2kts = 1.94384
-    ddict = {"altitude": {"units": "ft", "values": -data[:, 0]},
-             "heading": {"units": "radians", "values": data[:, 1]},
-             "speed": {"units": "kts", "values": data[:, 2]*ms2kts},
-             "pitch": {"units": "radians", "values": data[:, 3]},
-             "roll": {"units": "radians", "values": data[:, 4]},
-             "pressure": {"units": "bar", "values": data[:, 5]},
-             "rpm": {"units": "RPM", "values": data[:, 6]},
-             "ecuvoltage": {"units": "V", "values": data[:, 7]},
-             "cht1": {"units": "C", "values": data[:, 8]},
-             "cht2": {"units": "C", "values": data[:, 9]},
-             "fuelflow": {"units": "ml/min", "values": data[:, 10]},
-             "totalfuel": {"units": "ml", "values": data[:, 11]},
-             "gpse": {"units": "degrees", "values": data[:, 12]},
-             "gpsn": {"units": "degrees", "values": data[:, 13]},
-             "voltage": {"units": "V", "values": data[:, 14]},
-             "servovolt": {"units": "V", "values": data[:, 15]},
-             "fuelpresence": {"units": "-", "values": data[:, 16]},
-             "payloadtemp": {"units": "C", "values": data[:, 17]},
-             "mptemp": {"units": "C", "values": data[:, 18]},
-             "timeelapsed": {"units": "sec", "values": data[:, 20]},
+    fs2kts = 0.592484
+    ddict = {"altitude": {"units": "ft", "values": ay(-data[:, 0], dtype=flt)},
+             "heading": {"units": "radians",
+                         "values": ay(data[:, 1], dtype=flt)},
+             "speed": {"units": "kts",
+                       "values": ay(data[:, 2]*fs2kts, dtype=flt)},
+             "pitch": {"units": "radians", "values": ay(data[:, 3], dtype=flt)},
+             "roll": {"units": "radians", "values": ay(data[:, 4], dtype=flt)},
+             "pressure": {"units": "bar", "values": ay(data[:, 5], dtype=flt)},
+             "rpm": {"units": "RPM", "values": ay(data[:, 6], dtype=flt)},
+             "ecuvoltage": {"units": "V", "values": ay(data[:, 7], dtype=flt)},
+             "cht1": {"units": "C", "values": ay(data[:, 8], dtype=flt)},
+             "cht2": {"units": "C", "values": ay(data[:, 9], dtype=flt)},
+             "fuelflow": {"units": "ml/min",
+                          "values": ay(data[:, 10], dtype=flt)},
+             "totalfuel": {"units": "ml", "values": ay(data[:, 11], dtype=flt)},
+             "gpse": {"units": "degrees", "values": ay(data[:, 12], dtype=flt)},
+             "gpsn": {"units": "degrees", "values": ay(data[:, 13], dtype=flt)},
+             "voltage": {"units": "V", "values": ay(data[:, 14], dtype=flt)},
+             "servovolt": {"units": "V", "values": ay(data[:, 15], dtype=flt)},
+             "fuelpresence": {"units": "-",
+                              "values": ay(data[:, 16], dtype=flt)},
+             "payloadtemp": {"units": "C",
+                             "values": ay(data[:, 17], dtype=flt)},
+             "mptemp": {"units": "C", "values": ay(data[:, 18], dtype=flt)},
+             "timeelapsed": {"units": "sec",
+                             "values": ay(data[:, 20], dtype=flt)},
              "time": {"units": "-", "values": data[:, 21]}
             }
 
@@ -80,12 +88,29 @@ def print_flightstats(datadict):
     print "Max RPM: %d" % max(datadict["rpm"]["values"])
     chts = [max(datadict["cht1"]["values"]), max(datadict["cht2"]["values"])]
     print "Max CHT: %.2f [%s]" % (max(chts), datadict["cht1"]["units"])
+    ml2gl = 0.000264172
+    totalfuel = datadict["totalfuel"]["values"]
+    fuel = (totalfuel[-1] - totalfuel[0])*ml2gl
+    print "Total fuel burn: %.2f [gallon]" % fuel
 
 def check_units(datadict, params):
     " check if units are the same "
     assert len(params) == 2, "Just give me 2 params!"
     assert datadict[params[0]]["units"] == datadict[params[1]]["units"], (
         "Units must be the same for double plotting!")
+
+def trim_data(datadict, trange):
+    "trim flight data to specific range"
+
+    assert len(trange) == 2, "Specify upper and lower range values"
+    for i in range(2):
+        t = datadict["timeelapsed"]["values"]
+        ind = t > trange[i] if i == 0 else t < trange[i]
+        for d in datadict:
+            if d == "timeelapsed":
+                continue
+            datadict[d]["values"] = datadict[d]["values"][ind]
+        datadict["timeelapsed"]["values"] = t[ind]
 
 def plot_params(datadict, params):
     " plot flight parameters and return figure "
