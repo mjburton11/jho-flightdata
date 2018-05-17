@@ -1,8 +1,6 @@
 " process flight data from raspberri pi"
 import pandas as pd
 import numpy as np
-import simplekml
-from datetime import datetime
 import matplotlib.pyplot as plt
 from os import listdir, mkdir, rename
 from processdata import parse_pidata, plot_params, trim_data, print_flightstats
