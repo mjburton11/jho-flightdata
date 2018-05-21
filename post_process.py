@@ -124,6 +124,10 @@ if __name__ == "__main__":
     f, a = plot_params(D, ["speed", "altitude", "pitch", "fuelflow"])
     f.savefig("flight.pdf", bbox_inches="tight")
 
+    f, a = plt.subplots()
+    plt.scatter(D["rpm"]["values"], D["fuelflow"]["values"])
+    f.savefig("fuelflowrmp.pdf", bbox_inches="tight")
+
     trim_data(D, [4400, 4600])
 
     BSFC = calc_bsfc(D)
