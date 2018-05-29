@@ -36,6 +36,7 @@ def parse_pidata(pifile):
     data = np.array(data)
 
     fs2kts = 0.592484
+    ft2m = 0.3048
     ddict = {"altitude": {"units": "ft", "values": ay(-data[:, 0], dtype=flt)},
              "heading": {"units": "radians",
                          "values": ay(data[:, 1], dtype=flt)},
@@ -60,9 +61,15 @@ def parse_pidata(pifile):
              "payloadtemp": {"units": "C",
                              "values": ay(data[:, 17], dtype=flt)},
              "mptemp": {"units": "C", "values": ay(data[:, 18], dtype=flt)},
+             "zaccel": {"units": "m/s^2",
+                        "values": ay(data[:, 19]*ft2m, dtype=flt)},
+             "xaccel": {"units": "m/s^2",
+                        "values": ay(data[:, 20]*ft2m, dtype=flt)},
+             "yaccel": {"units": "m/s^2",
+                        "values": ay(data[:, 21]*ft2m, dtype=flt)},
              "timeelapsed": {"units": "sec",
-                             "values": ay(data[:, 20], dtype=flt)},
-             "time": {"units": "-", "values": data[:, 21]}
+                             "values": ay(data[:, 22], dtype=flt)},
+             "time": {"units": "-", "values": data[:, 23]}
             }
 
     return ddict
@@ -146,8 +153,6 @@ if __name__ == "__main__":
         mkdir("./" + dirname)
         rename(f, dirname + "/" + f)
         D = parse_pidata(dirname + "/" + f)
-        save_kml(D, dirname + "/coords.kml")
-        print_flightstats(D)
         f, a = plot_params(D, ["rpm", ["cht1", "cht2"], "ecuvoltage",
                                "pressure"])
         f.savefig(dirname + "/engine.pdf", bbox_inches="tight")

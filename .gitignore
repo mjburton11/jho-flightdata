@@ -107,3 +107,4 @@ venv.bak/
 *warmup*
 *.DS_Store
 *.zip
+*.swp

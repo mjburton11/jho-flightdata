@@ -117,23 +117,18 @@ def plot_endurance(time, weight, speed, power_air, power_tot):
     return fig, ax
 
 if __name__ == "__main__":
-    D = parse_pidata("20180507191728flightlog-star/2018-05-07-19:17:28-jho_command.log")
+    D = parse_pidata("20180523192859flightlog-enginetest/2018-05-23-19-28-59-jho_command.log")
 
-    trim_data(D, [3100, 5200])
+    trim_data(D, [100, 1600])
     print_flightstats(D)
     f, a = plot_params(D, ["speed", "altitude", "pitch", "fuelflow"])
     f.savefig("flight.pdf", bbox_inches="tight")
 
     f, a = plt.subplots()
-    plt.scatter(D["rpm"]["values"], D["fuelflow"]["values"])
+    a.scatter(D["rpm"]["values"], D["fuelflow"]["values"], facecolor='none')
+    # a.set_xlim([2000, 5000])
+    # a.set_ylim([0, 10])
+    a.grid()
     f.savefig("fuelflowrmp.pdf", bbox_inches="tight")
-
-    trim_data(D, [4400, 4600])
-
-    BSFC = calc_bsfc(D)
-    T, w, v, pa, ptot = endurance(4.)
-
-    f, a = plot_endurance(T, w, v, pa, ptot)
-    f.savefig("endurance.pdf", bbox_incehs="tight")
 
 
