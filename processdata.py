@@ -21,12 +21,17 @@ def parse_pidata(pifile):
     for d, t in zip(df.iloc[istart:, 2], df.iloc[istart:, 0]):
         if isinstance(d, float) and np.isnan(d):
             continue
-        if "*" in d or "#" in d:
+        if "*" in d or "#" in d or "L" in d:
             continue
         if "start" in d or "Connect" in d:
             continue
         st = d.replace("[", "").replace("]", "").split(",")
-        nums = [float(s) for s in st]
+        nums = []
+        for s in st:
+            if "None" not in s:
+                nums.append(float(s))
+            else:
+                nums.append(np.nan)
         if any(nums) == 0.0:
             continue
         dt = datetime.strptime(t, "%Y-%m-%d %H:%M:%S")
@@ -79,6 +84,10 @@ def save_kml(datadict, kmlfile):
     dfd = {"longitude": datadict["gpse"]["values"],
            "latitude": datadict["gpsn"]["values"]}
     df = pd.DataFrame(dfd)
+    df = df[df.longitude > -65]
+    df = df[df.longitude < -75]
+    df = df[df.latitude < 35]
+    df = df[df.latitude > 45]
     kml = simplekml.Kml()
     df.apply(lambda X: kml.newpoint(
         name="1", coords=[(X["longitude"], X["latitude"])]), axis=1)
@@ -87,7 +96,8 @@ def save_kml(datadict, kmlfile):
 def print_flightstats(datadict):
     " print import flight characteristics "
 
-    print "Log time: %d [min]" % (datadict["timeelapsed"]["values"][-1]/60.)
+    print "Log time: %d [min]" % ((datadict["timeelapsed"]["values"][-1]
+                                   - datadict["timeelapsed"]["values"][0])/60.)
     print "Max Altitude: %d [%s]" % (max(datadict["altitude"]["values"]),
                                      datadict["altitude"]["units"])
     print "Max Speed: %.2f [%s]" % (max(datadict["speed"]["values"]),
@@ -106,7 +116,8 @@ def check_units(datadict, params):
     assert datadict[params[0]]["units"] == datadict[params[1]]["units"], (
         "Units must be the same for double plotting!")
 
-def trim_data(datadict, trange):
+def trim_data(datadict, trange, rpmmax=9000, tempmax=170, barmax=5,
+              pitchmin=-50, pitchmax=50):
     "trim flight data to specific range"
 
     assert len(trange) == 2, "Specify upper and lower range values"
@@ -118,6 +129,14 @@ def trim_data(datadict, trange):
                 continue
             datadict[d]["values"] = datadict[d]["values"][ind]
         datadict["timeelapsed"]["values"] = t[ind]
+
+    datadict["rpm"]["values"][datadict["rpm"]["values"] > rpmmax] = np.nan
+    datadict["cht1"]["values"][datadict["cht1"]["values"] > tempmax] = np.nan
+    datadict["cht2"]["values"][datadict["cht2"]["values"] > tempmax] = np.nan
+    datadict["pressure"]["values"][
+        datadict["pressure"]["values"] > barmax] = np.nan
+    datadict["pitch"]["values"][datadict["pitch"]["values"] < pitchmin] = np.nan
+    datadict["pitch"]["values"][datadict["pitch"]["values"] > pitchmax] = np.nan
 
 def plot_params(datadict, params):
     " plot flight parameters and return figure "
@@ -133,7 +152,7 @@ def plot_params(datadict, params):
                 y = datadict[params[i][j]]["values"]
                 ax[i].plot(x, y)
             ax[i].set_ylabel("[%s]" % yunits)
-            ax[i].legend(params[i])
+            # ax[i].legend(params[i])
         else:
             y = datadict[params[i]]["values"]
             yunits = datadict[params[i]]["units"]

@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from os import listdir, mkdir, rename
-from processdata import parse_pidata, plot_params, trim_data, print_flightstats
+from processdata import parse_pidata, plot_params, trim_data, print_flightstats, save_kml
 
 kts2ms = 0.5144444
 lbs2N = 4.44822
@@ -117,18 +117,14 @@ def plot_endurance(time, weight, speed, power_air, power_tot):
     return fig, ax
 
 if __name__ == "__main__":
-    D = parse_pidata("20180523192859flightlog-enginetest/2018-05-23-19-28-59-jho_command.log")
+    D = parse_pidata("test_12_flightlog/test_12_jho_command.log")
 
-    trim_data(D, [100, 1600])
+    trim_data(D, [600, 3500], tempmax=145)
     print_flightstats(D)
+    # save_kml(D, "test_12_flightlog/test_12.kml")
     f, a = plot_params(D, ["speed", "altitude", "pitch", "fuelflow"])
-    f.savefig("flight.pdf", bbox_inches="tight")
+    f.savefig("test_12_flightlog/flight.pdf", bbox_inches="tight")
 
-    f, a = plt.subplots()
-    a.scatter(D["rpm"]["values"], D["fuelflow"]["values"], facecolor='none')
-    # a.set_xlim([2000, 5000])
-    # a.set_ylim([0, 10])
-    a.grid()
-    f.savefig("fuelflowrmp.pdf", bbox_inches="tight")
-
+    f, a = plot_params(D, ["rpm", ["cht1", "cht2"], "pressure"])
+    f.savefig("test_12_flightlog/engine.pdf", bbox_inches="tight")
 
