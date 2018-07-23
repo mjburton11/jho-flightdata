@@ -1,8 +1,9 @@
 " process flight data from raspberri pi"
 import pandas as pd
 import numpy as np
+import time
 from numpy import array as ay
-from numpy import float32 as flt
+from numpy import float64 as flt
 import simplekml
 from datetime import datetime
 import matplotlib.pyplot as plt
@@ -18,10 +19,17 @@ def parse_pidata(pifile):
             break
 
     data = []
+    tmelar = []
+    tme = flt(0.0)
     for d, t in zip(df.iloc[istart:, 2], df.iloc[istart:, 0]):
+        tmel = tme
+        tme += flt(0.2)
+        tme = np.round(tme, 1)
         if isinstance(d, float) and np.isnan(d):
             continue
         if "*" in d or "#" in d or "L" in d:
+            tme -= flt(0.2)
+            tme = np.round(tme, 1)
             continue
         if "start" in d or "Connect" in d:
             continue
@@ -35,7 +43,10 @@ def parse_pidata(pifile):
         if any(nums) == 0.0:
             continue
         dt = datetime.strptime(t, "%Y-%m-%d %H:%M:%S")
-        tmel = (dt - data[0][-1]).total_seconds() if data else 0.0
+        deltat = (dt - data[0][-1]).total_seconds() if data else 0.0
+        if int(tmel) != int(deltat):
+            tme = deltat
+
         data.append(nums + [tmel, dt])
 
     data = np.array(data)
@@ -117,7 +128,7 @@ def check_units(datadict, params):
         "Units must be the same for double plotting!")
 
 def trim_data(datadict, trange, rpmmax=9000, tempmax=170, barmax=5,
-              pitchmin=-50, pitchmax=50):
+              pitchmin=-np.pi/2, pitchmax=np.pi/2):
     "trim flight data to specific range"
 
     assert len(trange) == 2, "Specify upper and lower range values"
@@ -137,6 +148,8 @@ def trim_data(datadict, trange, rpmmax=9000, tempmax=170, barmax=5,
         datadict["pressure"]["values"] > barmax] = np.nan
     datadict["pitch"]["values"][datadict["pitch"]["values"] < pitchmin] = np.nan
     datadict["pitch"]["values"][datadict["pitch"]["values"] > pitchmax] = np.nan
+    datadict["roll"]["values"][datadict["roll"]["values"] < pitchmin] = np.nan
+    datadict["roll"]["values"][datadict["roll"]["values"] > pitchmax] = np.nan
 
 def plot_params(datadict, params):
     " plot flight parameters and return figure "
